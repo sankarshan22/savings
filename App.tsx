@@ -11,14 +11,25 @@ import { exportUnpaidBillsByMemberToCsv } from './utils/csv';
 import ExportPreview from './components/ExportPreview';
 import CostsDashboard from './components/CostsDashboard';
 import Login from './components/Login';
+import { supabase } from './supabaseClient';
 
 type View = 'home' | 'members' | 'bills' | 'profits' | 'costs' | 'export-preview';
 export type DatePaymentStatus = 'paid' | 'unpaid';
 
-// MOCK USER DATA - In a real app, this would be handled by a backend service
-const MOCK_USERS = {
-  'savings': 'asdfghjkl'
+// Get credentials from environment variables
+const getAuthCredentials = () => {
+  const loginId = import.meta.env.VITE_LOGIN_ID;
+  const password = import.meta.env.VITE_LOGIN_PASSWORD;
+  
+  if (!loginId || !password) {
+    console.warn('Missing authentication credentials in environment variables');
+    return {};
+  }
+  
+  return { [loginId]: password };
 };
+
+const MOCK_USERS = getAuthCredentials();
 
 // This function calculates costs, profits, and debts based on the full list of bills.
 const calculateMemberTotals = (baseMembers: Member[], currentBills: Bill[], currentSettlements: Settlement[]): Member[] => {
@@ -161,7 +172,9 @@ const App: React.FC = () => {
   const [settlements, setSettlements] = useState<Settlement[]>([]);
   const [datePaymentStatus, setDatePaymentStatus] = useState<Record<string, DatePaymentStatus>>({});
   const [groupedBillsForExport, setGroupedBillsForExport] = useState<ExportGroup[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
+  // Check authentication first on mount
   useEffect(() => {
     const loggedInUser = localStorage.getItem('currentUser');
     if (loggedInUser) {
@@ -169,6 +182,94 @@ const App: React.FC = () => {
       setCurrentUser(loggedInUser);
     }
   }, []);
+
+  // Load data from Supabase on mount
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        setIsLoading(true);
+        
+        // Load members
+        const { data: membersData, error: membersError } = await supabase
+          .from('members')
+          .select('*')
+          .order('created_at', { ascending: true });
+
+        if (membersError) throw membersError;
+
+        // Load bills
+        const { data: billsData, error: billsError } = await supabase
+          .from('bills')
+          .select('*')
+          .order('date', { ascending: false });
+
+        if (billsError) throw billsError;
+
+        // Load settlements
+        const { data: settlementsData, error: settlementsError } = await supabase
+          .from('settlements')
+          .select('*')
+          .order('date', { ascending: false });
+
+        if (settlementsError) throw settlementsError;
+
+        // Transform Supabase data to app format
+        if (membersData && membersData.length > 0) {
+          const transformedMembers: Member[] = membersData.map(m => ({
+            id: m.id,
+            name: m.name,
+            reimbursementAmt: m.reimbursement_amt,
+            reimbursedAmt: m.reimbursed_amt,
+            costs: 0,
+            profits: 0,
+            reimbursementHistory: [],
+            debts: { owedTo: {}, owedBy: {} },
+            totalOwed: 0,
+            totalOwedBy: 0,
+          }));
+          setBaseMembers(transformedMembers);
+        }
+
+        if (billsData && billsData.length > 0) {
+          const transformedBills: Bill[] = billsData.map(b => ({
+            id: b.id,
+            date: b.date,
+            from: b.from,
+            to: b.to,
+            reason: b.reason,
+            amount: b.amount,
+            profit: b.profit,
+            amountSharedBy: b.amount_shared_by,
+            paidBy: b.paid_by,
+          }));
+          setBills(transformedBills);
+        }
+
+        if (settlementsData && settlementsData.length > 0) {
+          const transformedSettlements: Settlement[] = settlementsData.map(s => ({
+            id: s.id,
+            date: s.date,
+            fromMemberId: s.from_member_id,
+            toMemberId: s.to_member_id,
+            amount: s.amount,
+          }));
+          setSettlements(transformedSettlements);
+        }
+      } catch (error) {
+        console.error('Error loading data from Supabase:', error);
+        // Fallback to empty state if Supabase fails
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    // Only load data if user is authenticated
+    if (isAuthenticated) {
+      loadData();
+    } else {
+      setIsLoading(false);
+    }
+  }, [isAuthenticated]);
 
   const members = useMemo(() => calculateMemberTotals(baseMembers, bills, settlements), [baseMembers, bills, settlements]);
 
@@ -220,9 +321,14 @@ const App: React.FC = () => {
       amountSharedBy: bill.amountSharedBy.filter(memberId => memberId !== id),
     }));
     setBills(updatedBills);
+    
+    // Delete from Supabase
+    supabase.from('members').delete().eq('id', id).then(({ error }) => {
+      if (error) console.error('Error deleting member from Supabase:', error);
+    });
   };
 
-  const handleAddMember = (newMemberData: { name: string }) => {
+  const handleAddMember = async (newMemberData: { name: string }) => {
     const newMember: Member = {
       ...newMemberData,
       id: crypto.randomUUID(),
@@ -236,26 +342,82 @@ const App: React.FC = () => {
       totalOwedBy: 0,
     };
     setBaseMembers(prevMembers => [...prevMembers, newMember]);
+    
+    // Save to Supabase
+    const { error } = await supabase.from('members').insert({
+      id: newMember.id,
+      name: newMember.name,
+      reimbursement_amt: newMember.reimbursementAmt,
+      reimbursed_amt: newMember.reimbursedAmt,
+    });
+    
+    if (error) {
+      console.error('Error saving member to Supabase:', error);
+    }
   };
 
-  const handleAddBill = (newBillData: Omit<Bill, 'id'>) => {
+  const handleAddBill = async (newBillData: Omit<Bill, 'id'>) => {
     const newBill: Bill = {
         ...newBillData,
         id: crypto.randomUUID(),
     };
     setBills(prevBills => [...prevBills, newBill]);
+    
+    // Save to Supabase
+    const { error } = await supabase.from('bills').insert({
+      id: newBill.id,
+      date: newBill.date,
+      from: newBill.from,
+      to: newBill.to,
+      reason: newBill.reason,
+      amount: newBill.amount,
+      profit: newBill.profit,
+      amount_shared_by: newBill.amountSharedBy,
+      paid_by: newBill.paidBy,
+    });
+    
+    if (error) {
+      console.error('Error saving bill to Supabase:', error);
+    }
   };
   
-  const handleEditBill = (updatedBill: Bill) => {
+  const handleEditBill = async (updatedBill: Bill) => {
     setBills(prevBills => prevBills.map(bill => (bill.id === updatedBill.id ? updatedBill : bill)));
+    
+    // Update in Supabase
+    const { error } = await supabase.from('bills').update({
+      date: updatedBill.date,
+      from: updatedBill.from,
+      to: updatedBill.to,
+      reason: updatedBill.reason,
+      amount: updatedBill.amount,
+      profit: updatedBill.profit,
+      amount_shared_by: updatedBill.amountSharedBy,
+      paid_by: updatedBill.paidBy,
+      updated_at: new Date().toISOString(),
+    }).eq('id', updatedBill.id);
+    
+    if (error) {
+      console.error('Error updating bill in Supabase:', error);
+    }
   };
 
   const handleRemoveBill = (id:string) => {
     setBills(prevBills => prevBills.filter(bill => bill.id !== id));
+    
+    // Delete from Supabase
+    supabase.from('bills').delete().eq('id', id).then(({ error }) => {
+      if (error) console.error('Error deleting bill from Supabase:', error);
+    });
   };
 
   const handleRemoveBillsByDate = (date: string) => {
     setBills(prevBills => prevBills.filter(bill => bill.date !== date));
+    
+    // Delete from Supabase
+    supabase.from('bills').delete().eq('date', date).then(({ error }) => {
+      if (error) console.error('Error deleting bills by date from Supabase:', error);
+    });
   };
   
   const handleDateStatusChange = (date: string, status: DatePaymentStatus) => {
@@ -265,12 +427,25 @@ const App: React.FC = () => {
     }));
   };
 
-  const handleAddSettlement = (newSettlementData: Omit<Settlement, 'id'>) => {
+  const handleAddSettlement = async (newSettlementData: Omit<Settlement, 'id'>) => {
     const newSettlement: Settlement = {
         ...newSettlementData,
         id: crypto.randomUUID(),
     };
     setSettlements(prev => [...prev, newSettlement]);
+    
+    // Save to Supabase
+    const { error } = await supabase.from('settlements').insert({
+      id: newSettlement.id,
+      date: newSettlement.date,
+      from_member_id: newSettlement.fromMemberId,
+      to_member_id: newSettlement.toMemberId,
+      amount: newSettlement.amount,
+    });
+    
+    if (error) {
+      console.error('Error saving settlement to Supabase:', error);
+    }
   };
 
   const handleExportUnpaidBills = () => {
@@ -381,6 +556,17 @@ const App: React.FC = () => {
     return <Login onLogin={handleLogin} />;
   }
 
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-[#121212] flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-[#00C2A8] mx-auto mb-4"></div>
+          <p className="text-[#F2F2F2] text-lg">Loading your data...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-[#121212] text-[#F2F2F2] font-sans">
       <Header currentUser={currentUser} onLogout={handleLogout} />
@@ -388,7 +574,7 @@ const App: React.FC = () => {
         {renderContent()}
       </main>
       <footer className="text-center py-4 text-[#B0B0B0] text-sm">
-        <p>Built with React & Tailwind CSS</p>
+        <p>© {new Date().getFullYear()} Savings. All rights reserved.</p>
       </footer>
     </div>
   );
