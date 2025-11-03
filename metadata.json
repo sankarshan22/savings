@@ -1,0 +1,5 @@
+{
+  "name": "IYKYK",
+  "description": "An application to manage a list of members. You can add new members, view existing members on a dashboard, and remove them.",
+  "requestFramePermissions": []
+}
