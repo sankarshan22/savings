@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { Member, Bill, Settlement } from '../types';
-import { formatCurrency } from '../utils/currency';
+import { formatCurrency } from './utils/currency';
 import MemberAvatar from './MemberAvatar';
 import Modal from './Modal';
 import SettleDebtForm from './SettleDebtForm';

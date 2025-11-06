@@ -8,7 +8,7 @@ import BillCard from './BillCard';
 import AddBillForm from './AddBillForm';
 import BillDetails from './BillDetails';
 import MemberAvatarList from './MemberAvatarList';
-import { formatCurrency } from '../utils/currency';
+import { formatCurrency } from './utils/currency';
 import DateMemberCard from './DateMemberCard';
 import { DatePaymentStatus } from '../App';
 import MemberAvatar from './MemberAvatar';
@@ -94,20 +94,21 @@ const Bills: React.FC<BillsProps> = ({ onBack, members, bills, onAddBill, onEdit
 
   const formatDate = (dateString: string) => {
     const [year, month, day] = dateString.split('-').map(Number);
+    if (!year || !month || !day) return dateString;
     const date = new Date(year, month - 1, day);
     const options: Intl.DateTimeFormatOptions = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
     return date.toLocaleDateString('en-US', options);
   };
 
-  const billsOnSelectedDate = selectedDateForModal ? billsByDate[selectedDateForModal] : [];
+  const billsOnSelectedDate = selectedDateForModal ? (billsByDate[selectedDateForModal] || []) : [];
 
   const totalProfitOnDate = useMemo(() => {
-    if (!selectedDateForModal) return 0;
+    if (!selectedDateForModal || !billsOnSelectedDate) return 0;
     return billsOnSelectedDate.reduce((sum, bill) => sum + bill.profit, 0);
   }, [billsOnSelectedDate, selectedDateForModal]);
 
   const involvedMembersOnDate = useMemo(() => {
-      if (!selectedDateForModal) return [];
+      if (!selectedDateForModal || !billsOnSelectedDate) return [];
       const uniqueMemberIds = [...new Set(billsOnSelectedDate.flatMap(b => b.amountSharedBy))];
       return uniqueMemberIds
         .map(id => members.find(m => m.id === id))
@@ -115,7 +116,7 @@ const Bills: React.FC<BillsProps> = ({ onBack, members, bills, onAddBill, onEdit
   }, [billsOnSelectedDate, selectedDateForModal, members]);
 
   const dateSpecificTotals = useMemo(() => {
-    if (!selectedDateForModal) return new Map();
+    if (!selectedDateForModal || !billsOnSelectedDate) return new Map();
     
     const totals = new Map<string, { cost: number; profit: number }>();
     const profitPerMember = involvedMembersOnDate.length > 0 ? totalProfitOnDate / involvedMembersOnDate.length : 0;
@@ -152,30 +153,30 @@ const Bills: React.FC<BillsProps> = ({ onBack, members, bills, onAddBill, onEdit
 
   return (
     <div>
-      <div className="flex justify-between items-center mb-8">
-        <div className="flex items-center gap-4">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 sm:gap-4 mb-6 sm:mb-8">
+        <div className="flex items-center gap-3 sm:gap-4">
           <button 
             onClick={onBack} 
-            className="p-2 rounded-full bg-[#1C1C1C] text-[#D9D9D9] hover:bg-[#2E2E2E] hover:text-[#F2F2F2] transition-colors"
+            className="p-2 rounded-full bg-[#1C1C1C] text-[#D9D9D9] hover:bg-[#2E2E2E] hover:text-[#F2F2F2] active:bg-[#2E2E2E] transition-colors shrink-0"
             aria-label="Go back"
           >
-            <ChevronLeftIcon className="w-6 h-6" />
+            <ChevronLeftIcon className="w-5 h-5 sm:w-6 sm:h-6" />
           </button>
-          <h2 className="text-2xl font-semibold text-[#F2F2F2] flex items-center">
-            <BillIcon className="w-6 h-6 mr-2 text-[#4F8CFF]"/>
+          <h2 className="text-xl sm:text-2xl font-semibold text-[#F2F2F2] flex items-center">
+            <BillIcon className="w-5 h-5 sm:w-6 sm:h-6 mr-2 text-[#4F8CFF]"/>
             Bills
           </h2>
         </div>
-        <Button onClick={() => setIsAddBillModalOpen(true)}>
-          <PlusIcon className="w-5 h-5 mr-2" />
+        <Button onClick={() => setIsAddBillModalOpen(true)} className="w-full sm:w-auto">
+          <PlusIcon className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
           Add Bill
         </Button>
       </div>
 
       {bills.length > 0 ? (
-        <div className="space-y-4">
+        <div className="space-y-3 sm:space-y-4">
           {sortedDates.map(date => {
-            const billsOnDate = billsByDate[date];
+            const billsOnDate = billsByDate[date] || [];
             const uniqueMemberIds = [...new Set(billsOnDate.flatMap(b => b.amountSharedBy))];
             const involvedMembers = uniqueMemberIds
               .map(id => members.find(m => m.id === id))
@@ -185,19 +186,19 @@ const Bills: React.FC<BillsProps> = ({ onBack, members, bills, onAddBill, onEdit
             return (
               <div 
                 key={date}
-                className="bg-[#1C1C1C] rounded-lg shadow-lg p-5 group relative transition-all duration-300 hover:bg-[#2E2E2E]/50 hover:shadow-[#4F8CFF]/20"
+                className="bg-[#1C1C1C] rounded-lg shadow-lg p-4 sm:p-5 group relative transition-all duration-300 hover:bg-[#2E2E2E]/50 hover:shadow-[#4F8CFF]/20"
               >
                 <div
                     onClick={() => openDateModal(date)}
-                    className="cursor-pointer"
+                    className="cursor-pointer active:bg-[#2E2E2E]/50 rounded-lg p-1 -m-1"
                     role="button"
                     tabIndex={0}
                     onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && openDateModal(date)}
                     aria-label={`View bills for ${formatDate(date)}`}
                 >
-                    <div className="flex justify-between items-center">
-                        <div>
-                        <h3 className="text-xl font-bold text-[#F2F2F2]">{formatDate(date)}</h3>
+                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
+                        <div className="min-w-0">
+                        <h3 className="text-lg sm:text-xl font-bold text-[#F2F2F2] truncate">{formatDate(date)}</h3>
                         <p className="text-sm text-[#D9D9D9] mt-1">{billsOnDate.length} bill(s) recorded</p>
                         </div>
                         <div className="text-right">
@@ -207,7 +208,7 @@ const Bills: React.FC<BillsProps> = ({ onBack, members, bills, onAddBill, onEdit
                     </div>
                 </div>
 
-                <div className="mt-4 pt-4 border-t border-[#2E2E2E]/50 flex justify-between items-center">
+                <div className="mt-4 pt-4 border-t border-[#2E2E2E]/50 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4">
                     <button
                         onClick={(e) => {
                             e.stopPropagation();
@@ -228,33 +229,37 @@ const Bills: React.FC<BillsProps> = ({ onBack, members, bills, onAddBill, onEdit
                         <TrashIcon className="w-4 h-4" />
                         Delete All ({billsOnDate.length})
                     </button>
-                    <fieldset onClick={e => e.stopPropagation()}>
-                        <legend className="sr-only">Payment Status for {formatDate(date)}</legend>
-                        <div className="flex items-center justify-end gap-6 text-sm">
-                            <label className="flex items-center gap-2 text-[#D9D9D9] cursor-pointer hover:text-[#FF6B81] transition-colors">
-                                <input
-                                    type="radio"
-                                    name={`status-${date}`}
-                                    value="unpaid"
-                                    checked={datePaymentStatus[date] !== 'paid'} // Default to unpaid
-                                    onChange={() => onDateStatusChange(date, 'unpaid')}
-                                    className="h-4 w-4 border-[#5A5A5A] text-[#FF6B81] focus:ring-[#FF6B81] focus:ring-offset-[#1C1C1C] bg-[#2E2E2E] transition-colors"
-                                />
-                                Not Paid Back
-                            </label>
-                            <label className="flex items-center gap-2 text-[#D9D9D9] cursor-pointer hover:text-[#A8E6CF] transition-colors">
-                                <input
-                                    type="radio"
-                                    name={`status-${date}`}
-                                    value="paid"
-                                    checked={datePaymentStatus[date] === 'paid'}
-                                    onChange={() => onDateStatusChange(date, 'paid')}
-                                    className="h-4 w-4 border-[#5A5A5A] text-[#A8E6CF] focus:ring-[#A8E6CF] focus:ring-offset-[#1C1C1C] bg-[#2E2E2E] transition-colors"
-                                />
-                                Paid Back
-                            </label>
-                        </div>
-                    </fieldset>
+                    
+                    <div className="flex items-center gap-2 sm:gap-3">
+                        <button
+                            type="button"
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                onDateStatusChange(date, 'unpaid');
+                            }}
+                            className={`px-3 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm font-semibold rounded-lg transition-all ${
+                                datePaymentStatus[date] !== 'paid'
+                                ? 'bg-[#FF6B81]/20 text-[#FF6B81] ring-2 ring-[#FF6B81]/50'
+                                : 'bg-[#2E2E2E] text-[#7A7A7A] hover:bg-[#3C3C3C] hover:text-[#FF6B81]'
+                            }`}
+                        >
+                            Not Paid Back
+                        </button>
+                        <button
+                            type="button"
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                onDateStatusChange(date, 'paid');
+                            }}
+                            className={`px-3 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm font-semibold rounded-lg transition-all ${
+                                datePaymentStatus[date] === 'paid'
+                                ? 'bg-[#A8E6CF]/20 text-[#A8E6CF] ring-2 ring-[#A8E6CF]/50'
+                                : 'bg-[#2E2E2E] text-[#7A7A7A] hover:bg-[#3C3C3C] hover:text-[#A8E6CF]'
+                            }`}
+                        >
+                            Paid Back
+                        </button>
+                    </div>
                 </div>
               </div>
             );

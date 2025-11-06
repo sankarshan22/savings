@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Member } from '../types';
 import Button from './Button';
-import { formatCurrency } from '../utils/currency';
+import { formatCurrency } from './utils/currency';
 import MemberAvatar from './MemberAvatar';
 
 interface SettleDebtFormProps {

@@ -3,7 +3,7 @@ import React from 'react';
 import Button from './Button';
 import { DownloadIcon, ChevronLeftIcon } from './icons/Icons';
 import { ExportGroup } from '../types';
-import { formatCurrency } from '../utils/currency';
+import { formatCurrency } from './utils/currency';
 
 interface ExportPreviewProps {
   onBack: () => void;

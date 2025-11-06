@@ -24,21 +24,21 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, children, size = 'md' })
 
   return (
     <div 
-      className="fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-50"
+      className="fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-50 p-4"
       onClick={onClose}
       aria-modal="true"
       role="dialog"
     >
       <div 
-        className={`bg-[#1C1C1C] rounded-lg shadow-xl w-full m-4 p-6 relative ${sizeClasses[size]}`}
+        className={`bg-[#1C1C1C] rounded-lg shadow-xl w-full p-4 sm:p-6 relative ${sizeClasses[size]} max-h-[90vh] overflow-y-auto`}
         onClick={e => e.stopPropagation()}
       >
         <button 
           onClick={onClose} 
-          className="absolute top-3 right-3 text-[#B0B0B0] hover:text-[#F2F2F2] transition-colors"
+          className="absolute top-2 right-2 sm:top-3 sm:right-3 text-[#B0B0B0] hover:text-[#F2F2F2] transition-colors z-10 bg-[#2E2E2E] rounded-full p-1"
           aria-label="Close modal"
         >
-          <CloseIcon className="w-6 h-6" />
+          <CloseIcon className="w-5 h-5 sm:w-6 sm:h-6" />
         </button>
         {children}
       </div>

@@ -2,7 +2,7 @@
 import React, { useMemo } from 'react';
 import { Bill, Member } from '../types';
 import { ChevronLeftIcon, ArrowTrendingUpIcon } from './icons/Icons';
-import { formatCurrency } from '../utils/currency';
+import { formatCurrency } from './utils/currency';
 import MemberAvatarList from './MemberAvatarList';
 import MemberAvatar from './MemberAvatar';
 
@@ -20,8 +20,11 @@ const ProfitsDashboard: React.FC<ProfitsDashboardProps> = ({ onBack, bills, memb
         if (!dateMap[bill.date]) {
           dateMap[bill.date] = { totalProfit: 0, involvedMemberIds: [] };
         }
-        dateMap[bill.date].totalProfit += bill.profit;
-        dateMap[bill.date].involvedMemberIds.push(...bill.amountSharedBy);
+        const dateData = dateMap[bill.date];
+        if (dateData) {
+          dateData.totalProfit += bill.profit;
+          dateData.involvedMemberIds.push(...bill.amountSharedBy);
+        }
       }
     });
 
@@ -42,7 +45,10 @@ const ProfitsDashboard: React.FC<ProfitsDashboardProps> = ({ onBack, bills, memb
   }, [bills]);
 
   const formatDate = (dateString: string) => {
-    const [year, month, day] = dateString.split('-').map(Number);
+    const parts = dateString.split('-').map(Number);
+    const year = parts[0] ?? 0;
+    const month = parts[1] ?? 1;
+    const day = parts[2] ?? 1;
     const date = new Date(year, month - 1, day);
     const options: Intl.DateTimeFormatOptions = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
     return date.toLocaleDateString('en-US', options);
@@ -70,13 +76,13 @@ const ProfitsDashboard: React.FC<ProfitsDashboardProps> = ({ onBack, bills, memb
       <div className="bg-[#1C1C1C] rounded-lg p-6 shadow-lg flex flex-col md:flex-row gap-8 mb-12">
           {/* Total Profit Section (Left) */}
           <div className="flex flex-col items-center justify-center text-center md:w-1/4 md:border-r md:border-[#2E2E2E] md:pr-8">
-              <p className="text-lg text-[#D9D9D9]">Total Profit</p>
+              <p className="text-lg text-[#D9D9D9]">Total Profits</p>
               <p className="text-5xl font-bold text-[#A8E6CF] mt-2">{formatCurrency(totalProfit)}</p>
           </div>
 
           {/* Member Profits Section (Right) */}
           <div className="md:w-3/4 flex-grow">
-              <h3 className="text-xl font-semibold text-[#F2F2F2] mb-4 text-center md:text-left">Member Profit Share</h3>
+              <h3 className="text-xl font-semibold text-[#F2F2F2] mb-4 text-center md:text-left">Member Profits</h3>
               {members.some(m => m.profits > 0) ? (
                   <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-x-4 gap-y-6">
                       {members
@@ -106,7 +112,10 @@ const ProfitsDashboard: React.FC<ProfitsDashboardProps> = ({ onBack, bills, memb
         {sortedDates.length > 0 ? (
           <div className="bg-[#1C1C1C] rounded-lg p-6 shadow-lg space-y-4">
               {sortedDates.map(date => {
-                  const { totalProfit: dailyProfit, involvedMemberIds } = profitsByDate[date];
+                  const dateData = profitsByDate[date];
+                  if (!dateData) return null;
+                  
+                  const { totalProfit: dailyProfit, involvedMemberIds } = dateData;
                   const involvedMembers = members.filter(m => involvedMemberIds.includes(m.id));
                   
                   return (

@@ -2,7 +2,7 @@
 // FIX: Implemented the BillCard component which was previously missing.
 import React from 'react';
 import { Bill, Member } from '../types';
-import { formatCurrency } from '../utils/currency';
+import { formatCurrency } from './utils/currency';
 import MemberAvatarList from './MemberAvatarList';
 import { TrashIcon, PencilIcon } from './icons/Icons';
 import MemberAvatar from './MemberAvatar';

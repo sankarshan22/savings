@@ -2,7 +2,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { Bill, Member } from '../types';
 import Button from './Button';
-import { formatCurrency } from '../utils/currency';
+import { formatCurrency } from './utils/currency';
 
 interface AddBillFormProps {
   onSave: (bill: Bill | Omit<Bill, 'id'>) => void;
@@ -44,6 +44,13 @@ const AddBillForm: React.FC<AddBillFormProps> = ({ onSave, onClose, members, ini
         setPaidBy(amountSharedBy[0]);
     }
   }, [amountSharedBy]);
+  
+  // When 'paidBy' is selected, ensure they are in the 'amountSharedBy' list
+  useEffect(() => {
+    if (paidBy && !amountSharedBy.includes(paidBy)) {
+        setAmountSharedBy(prev => [...prev, paidBy]);
+    }
+  }, [paidBy, amountSharedBy]);
   
   const totalAmount = useMemo(() => {
     const cost = typeof amount === 'number' ? amount : 0;
@@ -94,8 +101,16 @@ const AddBillForm: React.FC<AddBillFormProps> = ({ onSave, onClose, members, ini
     }
   };
   
-  const handleCheckboxChange = (list: string[], setList: React.Dispatch<React.SetStateAction<string[]>>, id: string) => {
-    setList(prev => prev.includes(id) ? prev.filter(mId => mId !== id) : [...prev, id]);
+  const handleCheckboxChange = (id: string) => {
+    setAmountSharedBy(prev => prev.includes(id) ? prev.filter(mId => mId !== id) : [...prev, id]);
+  };
+
+  const handleSelectAll = () => {
+    setAmountSharedBy(members.map(m => m.id));
+  };
+
+  const handleDeselectAll = () => {
+    setAmountSharedBy([]);
   };
 
   return (
@@ -174,17 +189,23 @@ const AddBillForm: React.FC<AddBillFormProps> = ({ onSave, onClose, members, ini
 
         {/* Sharing Details */}
         <fieldset className="border-t border-[#2E2E2E] pt-5">
-            <legend className="text-lg font-semibold text-[#F2F2F2] px-2 -ml-2">Sharing Details</legend>
-            <div className="mt-4">
+            <div className="flex justify-between items-center mb-2">
+                <legend className="text-lg font-semibold text-[#F2F2F2]">Sharing Details</legend>
+                 <div className="flex gap-2">
+                    <button type="button" onClick={handleSelectAll} className="px-3 py-1 text-xs font-medium text-[#00C2A8] bg-[#00C2A8]/10 rounded-md hover:bg-[#00C2A8]/20 transition-colors">Select All</button>
+                    <button type="button" onClick={handleDeselectAll} className="px-3 py-1 text-xs font-medium text-[#FF6B81] bg-[#FF6B81]/10 rounded-md hover:bg-[#FF6B81]/20 transition-colors">Deselect All</button>
+                </div>
+            </div>
+            <div className="mt-2">
                 {/* Amount Shared By */}
                 <div>
                     <h4 className="font-medium text-[#F2F2F2] mb-2">Shared With</h4>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 p-2 bg-[#121212]/50 rounded-md">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 p-2 bg-[#121212]/50 rounded-md max-h-48 overflow-y-auto">
                         {members.map(member => (
                             <label key={member.id} className="flex items-center space-x-3 cursor-pointer p-2 rounded-md hover:bg-[#2E2E2E]/50 transition-colors">
                                 <input type="checkbox"
                                     checked={amountSharedBy.includes(member.id)}
-                                    onChange={() => handleCheckboxChange(amountSharedBy, setAmountSharedBy, member.id)}
+                                    onChange={() => handleCheckboxChange(member.id)}
                                     className="h-4 w-4 rounded border-[#5A5A5A] text-[#00C2A8] focus:ring-[#00C2A8] focus:ring-offset-[#1C1C1C] bg-[#2E2E2E]"
                                 />
                                 <span className="text-[#F2F2F2]">{member.name}</span>

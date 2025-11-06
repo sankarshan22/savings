@@ -2,7 +2,7 @@
 import React, { useMemo } from 'react';
 import { Bill, Member } from '../types';
 import { ChevronLeftIcon, ArrowTrendingDownIcon } from './icons/Icons';
-import { formatCurrency } from '../utils/currency';
+import { formatCurrency } from './utils/currency';
 import MemberAvatarList from './MemberAvatarList';
 import MemberAvatar from './MemberAvatar';
 
@@ -20,8 +20,11 @@ const CostsDashboard: React.FC<CostsDashboardProps> = ({ onBack, bills, members 
         if (!dateMap[bill.date]) {
           dateMap[bill.date] = { totalCost: 0, involvedMemberIds: [] };
         }
-        dateMap[bill.date].totalCost += bill.amount;
-        dateMap[bill.date].involvedMemberIds.push(...bill.amountSharedBy);
+        const dateData = dateMap[bill.date];
+        if (dateData) {
+          dateData.totalCost += bill.amount;
+          dateData.involvedMemberIds.push(...bill.amountSharedBy);
+        }
       }
     });
 
@@ -42,7 +45,10 @@ const CostsDashboard: React.FC<CostsDashboardProps> = ({ onBack, bills, members 
   }, [bills]);
 
   const formatDate = (dateString: string) => {
-    const [year, month, day] = dateString.split('-').map(Number);
+    const parts = dateString.split('-').map(Number);
+    const year = parts[0] ?? 0;
+    const month = parts[1] ?? 1;
+    const day = parts[2] ?? 1;
     const date = new Date(year, month - 1, day);
     const options: Intl.DateTimeFormatOptions = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
     return date.toLocaleDateString('en-US', options);
@@ -106,7 +112,10 @@ const CostsDashboard: React.FC<CostsDashboardProps> = ({ onBack, bills, members 
         {sortedDates.length > 0 ? (
           <div className="bg-[#1C1C1C] rounded-lg p-6 shadow-lg space-y-4">
               {sortedDates.map(date => {
-                  const { totalCost: dailyCost, involvedMemberIds } = costsByDate[date];
+                  const dateData = costsByDate[date];
+                  if (!dateData) return null;
+                  
+                  const { totalCost: dailyCost, involvedMemberIds } = dateData;
                   const involvedMembers = members.filter(m => involvedMemberIds.includes(m.id));
                   
                   return (

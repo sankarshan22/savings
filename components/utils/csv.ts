@@ -1,5 +1,5 @@
 
-import { Bill, Member } from '../types';
+import { Bill, Member } from '../../types';
 
 interface CsvRow {
     [key: string]: string | number;
@@ -44,32 +44,46 @@ const escapeCsvCell = (cellData: any): string => {
 };
 
 export const exportUnpaidBillsByMemberToCsv = (filename: string, allMembers: Member[], unpaidBills: Bill[]) => {
-    const involvedMemberIds = [...new Set(unpaidBills.flatMap(b => b.amountSharedBy))];
-    const involvedMembers = allMembers
-        .filter(m => involvedMemberIds.includes(m.id))
-        .sort((a,b) => a.name.localeCompare(b.name));
+    // Group bills by the member who paid for them
+    const memberCreditors = new Map<string, Bill[]>();
+
+    unpaidBills.forEach(bill => {
+        if (bill.paidBy) {
+            if (!memberCreditors.has(bill.paidBy)) {
+                memberCreditors.set(bill.paidBy, []);
+            }
+            memberCreditors.get(bill.paidBy)?.push(bill);
+        }
+    });
 
     let csvContent = '';
     const headers = ['Date', 'From', 'To', 'Amount'];
     
-    involvedMembers.forEach(member => {
-        const memberBills = unpaidBills.filter(bill => bill.amountSharedBy.includes(member.id));
+    // Sort members by name for consistent output
+    const sortedMemberIds = Array.from(memberCreditors.keys()).sort((a, b) => {
+        const memberA = allMembers.find(m => m.id === a);
+        const memberB = allMembers.find(m => m.id === b);
+        return memberA?.name.localeCompare(memberB?.name || '') || 0;
+    });
+
+    sortedMemberIds.forEach(memberId => {
+        const memberBills = memberCreditors.get(memberId) || [];
+        const member = allMembers.find(m => m.id === memberId);
         
-        if (memberBills.length > 0) {
+        if (memberBills.length > 0 && member) {
             let memberTotal = 0;
             csvContent += `${escapeCsvCell(member.name)}\r\n`;
             csvContent += headers.map(h => escapeCsvCell(h)).join(',') + '\r\n';
             
             memberBills.forEach(bill => {
-                const numSharers = bill.amountSharedBy.length;
-                const perMemberAmount = numSharers > 0 ? (bill.amount + bill.profit) / numSharers : 0;
-                memberTotal += perMemberAmount;
+                const billTotal = bill.amount + bill.profit;
+                memberTotal += billTotal;
 
                 const row = [
                     bill.date,
                     bill.from,
                     bill.to,
-                    perMemberAmount.toFixed(2)
+                    billTotal.toFixed(2)
                 ];
 
                 csvContent += row.map(cell => escapeCsvCell(cell)).join(',') + '\r\n';

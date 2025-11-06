@@ -34,48 +34,48 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
   };
 
   return (
-    <div className="min-h-screen bg-[#121212] flex flex-col justify-center items-center p-4">
+    <div className="min-h-screen bg-[#121212] flex flex-col justify-center items-center p-3 sm:p-4">
       <div className="w-full max-w-md">
-        <div className="text-center mb-8">
-            <h1 className="text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-[#00C2A8] to-[#4F8CFF]">
+        <div className="text-center mb-6 sm:mb-8">
+            <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-[#00C2A8] to-[#4F8CFF]">
             IYKYK
             </h1>
-            <p className="text-[#B0B0B0] mt-2">Please sign in to continue</p>
+            <p className="text-sm sm:text-base text-[#B0B0B0] mt-2">Please sign in to continue</p>
         </div>
         
         <form 
             onSubmit={handleSubmit} 
-            className="bg-[#1C1C1C] p-8 rounded-lg shadow-2xl space-y-6"
+            className="bg-[#1C1C1C] p-6 sm:p-8 rounded-lg shadow-2xl space-y-5 sm:space-y-6"
         >
-            {error && <p className="text-[#FF6B81] bg-[#FF6B81]/10 p-3 rounded-md text-center">{error}</p>}
+            {error && <p className="text-sm sm:text-base text-[#FF6B81] bg-[#FF6B81]/10 p-3 rounded-md text-center">{error}</p>}
             
             <div>
-                <label htmlFor="loginId" className="block text-sm font-medium text-[#F2F2F2]">Login ID</label>
+                <label htmlFor="loginId" className="block text-sm font-medium text-[#F2F2F2] mb-1">Login ID</label>
                 <input
                     type="text"
                     id="loginId"
                     value={loginId}
                     onChange={(e) => setLoginId(e.target.value)}
-                    className="mt-1 block w-full bg-[#2E2E2E] border border-[#3C3C3C] rounded-md shadow-sm py-3 px-4 text-white focus:outline-none focus:ring-[#00C2A8] focus:border-[#00C2A8] sm:text-sm"
+                    className="mt-1 block w-full bg-[#2E2E2E] border border-[#3C3C3C] rounded-md shadow-sm py-3 px-4 text-white focus:outline-none focus:ring-[#00C2A8] focus:border-[#00C2A8] text-base"
                     placeholder="e.g. admin"
                     disabled={isLoading}
                 />
             </div>
 
             <div>
-                <label htmlFor="password" className="block text-sm font-medium text-[#F2F2F2]">Password</label>
+                <label htmlFor="password" className="block text-sm font-medium text-[#F2F2F2] mb-1">Password</label>
                 <input
                     type="password"
                     id="password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="mt-1 block w-full bg-[#2E2E2E] border border-[#3C3C3C] rounded-md shadow-sm py-3 px-4 text-white focus:outline-none focus:ring-[#00C2A8] focus:border-[#00C2A8] sm:text-sm"
+                    className="mt-1 block w-full bg-[#2E2E2E] border border-[#3C3C3C] rounded-md shadow-sm py-3 px-4 text-white focus:outline-none focus:ring-[#00C2A8] focus:border-[#00C2A8] text-base"
                     placeholder="e.g. password"
                     disabled={isLoading}
                 />
             </div>
           
-            <Button type="submit" disabled={isLoading} style={{ width: '100%', height: '48px' }}>
+            <Button type="submit" disabled={isLoading} style={{ width: '100%', minHeight: '48px' }}>
                 {isLoading ? (
                     <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
                 ) : (

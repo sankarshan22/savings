@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Member } from '../types';
-import { formatCurrency } from '../utils/currency';
+import { formatCurrency } from './utils/currency';
 import MemberAvatar from './MemberAvatar';
 
 interface DateMemberCardProps {

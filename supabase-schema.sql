@@ -78,7 +78,30 @@ CREATE TRIGGER update_bills_updated_at BEFORE UPDATE ON public.bills
 CREATE TRIGGER update_settlements_updated_at BEFORE UPDATE ON public.settlements
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+-- Create date_payment_status table
+CREATE TABLE IF NOT EXISTS public.date_payment_status (
+    date TEXT PRIMARY KEY,
+    status TEXT NOT NULL CHECK (status IN ('paid', 'unpaid')),
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Enable Row Level Security for date_payment_status
+ALTER TABLE public.date_payment_status ENABLE ROW LEVEL SECURITY;
+
+-- Create policy for date_payment_status
+CREATE POLICY "Allow all operations on date_payment_status" ON public.date_payment_status
+    FOR ALL USING (true) WITH CHECK (true);
+
+-- Create index for date_payment_status
+CREATE INDEX IF NOT EXISTS idx_date_payment_status_date ON public.date_payment_status(date);
+
+-- Create trigger for date_payment_status
+CREATE TRIGGER update_date_payment_status_updated_at BEFORE UPDATE ON public.date_payment_status
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
 -- Grant permissions (for authenticated and anon users)
 GRANT ALL ON public.members TO anon, authenticated;
 GRANT ALL ON public.bills TO anon, authenticated;
 GRANT ALL ON public.settlements TO anon, authenticated;
+GRANT ALL ON public.date_payment_status TO anon, authenticated;

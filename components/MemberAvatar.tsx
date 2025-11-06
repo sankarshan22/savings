@@ -1,5 +1,5 @@
 import React from 'react';
-import { generateAvatarColor } from '../utils/color';
+import { generateAvatarColor } from './utils/color';
 
 interface MemberAvatarProps {
   name: string;
