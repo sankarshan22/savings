@@ -21,7 +21,14 @@ const BillDetails: React.FC<BillDetailsProps> = ({ bill, members }) => {
   return (
     <div className="p-2 space-y-6">
       <div>
-        <p className="text-sm text-[#D9D9D9]">{bill.date}</p>
+        <div className="inline-flex items-center gap-2 mb-2">
+          <span className="text-xs font-bold text-[#A8E6CF] bg-[#A8E6CF]/10 px-3 py-1 rounded-full">
+            Order #{bill.orderNumber}
+          </span>
+          <span className="text-xs font-medium text-[#4F8CFF] bg-[#4F8CFF]/10 px-3 py-1 rounded-full">
+            📅 {bill.date}
+          </span>
+        </div>
         <h3 className="text-2xl font-bold text-[#FFFFFF]">{bill.from} → {bill.to}</h3>
         <p className="text-[#F2F2F2] mt-1">{bill.reason}</p>
       </div>

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Member } from '../types';
 import Button from './Button';
 import { formatCurrency } from './utils/currency';
+import { formatDateToDDMMYYYY, convertDDMMYYYYToISO, convertISOToDDMMYYYY } from './utils/helpers';
 import MemberAvatar from './MemberAvatar';
 
 interface SettleDebtFormProps {
@@ -14,8 +15,14 @@ interface SettleDebtFormProps {
 
 const SettleDebtForm: React.FC<SettleDebtFormProps> = ({ creditor, debtor, maxAmount, onSettle, onClose }) => {
   const [amount, setAmount] = useState<number | ''>(Number(maxAmount.toFixed(2)));
-  const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+  const [date, setDate] = useState(formatDateToDDMMYYYY(new Date())); // DD/MM/YYYY format
+  const [dateInput, setDateInput] = useState(new Date().toISOString().split('T')[0]); // ISO format for input
   const [error, setError] = useState('');
+
+  const handleDateChange = (isoDate: string) => {
+    setDateInput(isoDate);
+    setDate(convertISOToDDMMYYYY(isoDate));
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -67,10 +74,17 @@ const SettleDebtForm: React.FC<SettleDebtFormProps> = ({ creditor, debtor, maxAm
             <input
               type="date"
               id="date"
-              value={date}
-              onChange={(e) => setDate(e.target.value)}
+              value={dateInput}
+              onChange={(e) => handleDateChange(e.target.value)}
               className="mt-1 block w-full bg-[#2E2E2E] border border-[#3C3C3C] rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-[#00C2A8] focus:border-[#00C2A8] sm:text-sm"
             />
+            {date && (
+              <div className="mt-2">
+                <span className="text-xs font-medium text-[#4F8CFF] bg-[#4F8CFF]/10 px-2 py-1 rounded-full">
+                  📅 {date}
+                </span>
+              </div>
+            )}
           </div>
       </div>
       

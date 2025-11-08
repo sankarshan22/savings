@@ -39,6 +39,7 @@ export interface Bill {
   profit: number;
   amountSharedBy: string[]; // Array of member IDs
   paidBy: string; // ID of the member who paid
+  orderNumber: number; // Sequential order number (1, 2, 3, 4...) - REQUIRED
 }
 
 export interface ExportBill {

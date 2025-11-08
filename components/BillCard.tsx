@@ -60,7 +60,14 @@ const BillCard: React.FC<BillCardProps> = ({ bill, members, onRemove, onEdit, on
        </div>
       <div className="flex justify-between items-start">
         <div>
-          <p className="text-sm text-[#D9D9D9]">{bill.date}</p>
+          <div className="inline-flex items-center gap-2 mb-1">
+            <span className="text-xs font-bold text-[#A8E6CF] bg-[#A8E6CF]/10 px-2 py-1 rounded">
+              #{bill.orderNumber}
+            </span>
+            <span className="text-xs font-medium text-[#4F8CFF] bg-[#4F8CFF]/10 px-2 py-1 rounded">
+              📅 {bill.date}
+            </span>
+          </div>
           <h3 className="text-xl font-bold text-[#FFFFFF]">{bill.from} → {bill.to}</h3>
           <p className="text-sm text-[#F2F2F2] mt-1">{bill.reason}</p>
         </div>

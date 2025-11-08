@@ -9,6 +9,7 @@ import { exportUnpaidBillsByMemberToCsv } from './components/utils/csv';
 import ExportPreview from './components/ExportPreview';
 import CostsDashboard from './components/CostsDashboard';
 import { formatCurrency } from './components/utils/currency';
+import { formatDateToDDMMYYYY } from './components/utils/helpers';
 import PendingReimbursementsModal from './components/PendingReimbursementsModal';
 import ReimbursedDetailsModal from './components/ReimbursedDetailsModal';
 import LoginPage from './components/LoginPage';
@@ -327,7 +328,9 @@ const App: React.FC = () => {
     
     const confirmExport = () => {
         const unpaidBills = bills.filter(bill => datePaymentStatus[bill.date] !== 'paid');
-        exportUnpaidBillsByMemberToCsv(`unpaid-bills-${new Date().toISOString().split('T')[0]}.csv`, membersWithTotals, unpaidBills);
+        // Format: unpaid-bills-DD-MM-YYYY.csv (using hyphens for file compatibility)
+        const dateStr = formatDateToDDMMYYYY(new Date()).replace(/\//g, '-');
+        exportUnpaidBillsByMemberToCsv(`unpaid-bills-${dateStr}.csv`, membersWithTotals, unpaidBills);
         setView('home');
     };
 

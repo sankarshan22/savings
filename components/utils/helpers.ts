@@ -54,11 +54,21 @@ export const isValidEmail = (email: string): boolean => {
 
 /**
  * Validates date is within reasonable range
- * @param dateString - Date string in YYYY-MM-DD format
+ * @param dateString - Date string in DD/MM/YYYY format
  * @returns True if date is valid and within range
  */
 export const isValidDate = (dateString: string): boolean => {
-  const date = new Date(dateString);
+  // Parse DD/MM/YYYY format
+  const parts = dateString.split('/');
+  if (parts.length !== 3) return false;
+  
+  const day = parseInt(parts[0] ?? '', 10);
+  const month = parseInt(parts[1] ?? '', 10);
+  const year = parseInt(parts[2] ?? '', 10);
+  
+  if (isNaN(day) || isNaN(month) || isNaN(year)) return false;
+  
+  const date = new Date(year, month - 1, day);
   const now = new Date();
   const oneYearAgo = new Date();
   oneYearAgo.setFullYear(now.getFullYear() - 1);
@@ -66,6 +76,46 @@ export const isValidDate = (dateString: string): boolean => {
   oneYearAhead.setFullYear(now.getFullYear() + 1);
   
   return date >= oneYearAgo && date <= oneYearAhead;
+};
+
+/**
+ * Converts Date object to DD/MM/YYYY format
+ * @param date - Date object
+ * @returns Date string in DD/MM/YYYY format
+ */
+export const formatDateToDDMMYYYY = (date: Date): string => {
+  const day = String(date.getDate()).padStart(2, '0');
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const year = date.getFullYear();
+  return `${day}/${month}/${year}`;
+};
+
+/**
+ * Converts DD/MM/YYYY string to YYYY-MM-DD format for HTML date input
+ * @param dateString - Date string in DD/MM/YYYY format
+ * @returns Date string in YYYY-MM-DD format
+ */
+export const convertDDMMYYYYToISO = (dateString: string): string => {
+  const parts = dateString.split('/');
+  if (parts.length !== 3) return '';
+  const day = parts[0] ?? '';
+  const month = parts[1] ?? '';
+  const year = parts[2] ?? '';
+  return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+};
+
+/**
+ * Converts YYYY-MM-DD string to DD/MM/YYYY format
+ * @param dateString - Date string in YYYY-MM-DD format
+ * @returns Date string in DD/MM/YYYY format
+ */
+export const convertISOToDDMMYYYY = (dateString: string): string => {
+  const parts = dateString.split('-');
+  if (parts.length !== 3) return '';
+  const year = parts[0] ?? '';
+  const month = parts[1] ?? '';
+  const day = parts[2] ?? '';
+  return `${day}/${month}/${year}`;
 };
 
 /**

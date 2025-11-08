@@ -89,18 +89,31 @@ const Bills: React.FC<BillsProps> = ({ onBack, members, bills, onAddBill, onEdit
   }, [billsByDate, selectedDateForModal]);
 
   const sortedDates = useMemo(() => {
-    return Object.keys(billsByDate).sort((a, b) => new Date(b).getTime() - new Date(a).getTime());
+    return Object.keys(billsByDate).sort((a, b) => {
+      // Convert DD/MM/YYYY to Date for comparison
+      const [dayA, monthA, yearA] = a.split('/').map(Number);
+      const [dayB, monthB, yearB] = b.split('/').map(Number);
+      const dateA = new Date(yearA ?? 0, (monthA ?? 1) - 1, dayA ?? 1);
+      const dateB = new Date(yearB ?? 0, (monthB ?? 1) - 1, dayB ?? 1);
+      return dateB.getTime() - dateA.getTime();
+    });
   }, [billsByDate]);
 
   const formatDate = (dateString: string) => {
-    const [year, month, day] = dateString.split('-').map(Number);
-    if (!year || !month || !day) return dateString;
+    // Parse DD/MM/YYYY format
+    const [day, month, year] = dateString.split('/').map(Number);
+    if (!day || !month || !year) return dateString;
     const date = new Date(year, month - 1, day);
     const options: Intl.DateTimeFormatOptions = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
     return date.toLocaleDateString('en-US', options);
   };
 
-  const billsOnSelectedDate = selectedDateForModal ? (billsByDate[selectedDateForModal] || []) : [];
+  // Sort bills by order number (ascending - always present)
+  const sortBillsByOrder = (bills: Bill[]) => {
+    return [...bills].sort((a, b) => a.orderNumber - b.orderNumber);
+  };
+
+  const billsOnSelectedDate = selectedDateForModal ? sortBillsByOrder(billsByDate[selectedDateForModal] || []) : [];
 
   const totalProfitOnDate = useMemo(() => {
     if (!selectedDateForModal || !billsOnSelectedDate) return 0;
@@ -147,7 +160,8 @@ const Bills: React.FC<BillsProps> = ({ onBack, members, bills, onAddBill, onEdit
 
   const billsForSelectedMemberOnDate = useMemo(() => {
       if (!selectedMemberIdInModal || !selectedDateForModal) return [];
-      return billsByDate[selectedDateForModal]?.filter(bill => bill.amountSharedBy.includes(selectedMemberIdInModal)) || [];
+      const filteredBills = billsByDate[selectedDateForModal]?.filter(bill => bill.amountSharedBy.includes(selectedMemberIdInModal)) || [];
+      return sortBillsByOrder(filteredBills);
   }, [selectedMemberIdInModal, selectedDateForModal, billsByDate]);
 
 
@@ -198,6 +212,11 @@ const Bills: React.FC<BillsProps> = ({ onBack, members, bills, onAddBill, onEdit
                 >
                     <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
                         <div className="min-w-0">
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className="text-xs font-medium text-[#4F8CFF] bg-[#4F8CFF]/10 px-3 py-1 rounded-full">
+                            📅 {date}
+                          </span>
+                        </div>
                         <h3 className="text-lg sm:text-xl font-bold text-[#F2F2F2] truncate">{formatDate(date)}</h3>
                         <p className="text-sm text-[#D9D9D9] mt-1">{billsOnDate.length} bill(s) recorded</p>
                         </div>
@@ -276,9 +295,14 @@ const Bills: React.FC<BillsProps> = ({ onBack, members, bills, onAddBill, onEdit
       {selectedDateForModal && billsOnSelectedDate.length > 0 && (
         <Modal isOpen={!!selectedDateForModal} onClose={handleCloseDateModal} size="5xl">
           <div className="p-2">
-              <h2 className="text-2xl font-bold text-white mb-6 text-center">
-                  Bills: {formatDate(selectedDateForModal)}
-              </h2>
+              <div className="text-center mb-6">
+                <span className="text-xs font-medium text-[#4F8CFF] bg-[#4F8CFF]/10 px-3 py-1 rounded-full inline-block mb-2">
+                  📅 {selectedDateForModal}
+                </span>
+                <h2 className="text-2xl font-bold text-white">
+                  {formatDate(selectedDateForModal)}
+                </h2>
+              </div>
 
               <div className="flex bg-[#121212]/50 rounded-lg p-4 mb-6">
                 <div className="w-1/4 pr-4 border-r border-[#2E2E2E] flex flex-col justify-center items-center">

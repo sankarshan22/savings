@@ -3,6 +3,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { Bill, Member } from '../types';
 import Button from './Button';
 import { formatCurrency } from './utils/currency';
+import { formatDateToDDMMYYYY, convertDDMMYYYYToISO, convertISOToDDMMYYYY } from './utils/helpers';
 
 interface AddBillFormProps {
   onSave: (bill: Bill | Omit<Bill, 'id'>) => void;
@@ -16,34 +17,44 @@ const AddBillForm: React.FC<AddBillFormProps> = ({ onSave, onClose, members, ini
   
   const isEditing = !!initialBill;
 
-  // Form State
+  // Form State - date stored in DD/MM/YYYY format
   const [from, setFrom] = useState('');
   const [to, setTo] = useState('');
-  const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+  const [date, setDate] = useState(formatDateToDDMMYYYY(new Date()));
+  const [dateInput, setDateInput] = useState(new Date().toISOString().split('T')[0]); // ISO format for input
   const [reason, setReason] = useState('');
   const [amount, setAmount] = useState<number | ''>('');
   const [profit, setProfit] = useState<number | ''>('');
   const [amountSharedBy, setAmountSharedBy] = useState<string[]>([]);
   const [paidBy, setPaidBy] = useState<string>('');
+  const [orderNumber, setOrderNumber] = useState<number | ''>(1); // Default to 1
 
   useEffect(() => {
     if (initialBill) {
       setFrom(initialBill.from);
       setTo(initialBill.to);
       setDate(initialBill.date);
+      setDateInput(convertDDMMYYYYToISO(initialBill.date)); // Convert for input
       setReason(initialBill.reason);
       setAmount(initialBill.amount);
       setProfit(initialBill.profit);
       setAmountSharedBy(initialBill.amountSharedBy);
       setPaidBy(initialBill.paidBy);
+      setOrderNumber(initialBill.orderNumber);
     }
   }, [initialBill]);
 
   useEffect(() => {
     if (amountSharedBy.length === 1) {
-        setPaidBy(amountSharedBy[0]);
+        setPaidBy(amountSharedBy[0] ?? '');
     }
   }, [amountSharedBy]);
+  
+  // Handle date input change - convert from ISO to DD/MM/YYYY
+  const handleDateChange = (isoDate: string) => {
+    setDateInput(isoDate);
+    setDate(convertISOToDDMMYYYY(isoDate));
+  };
   
   // When 'paidBy' is selected, ensure they are in the 'amountSharedBy' list
   useEffect(() => {
@@ -65,6 +76,10 @@ const AddBillForm: React.FC<AddBillFormProps> = ({ onSave, onClose, members, ini
       }
       if (amount === '' || profit === '' || amount < 0 || profit < 0) {
           setError('Please enter valid, non-negative numbers for cost and profit.');
+          return false;
+      }
+      if (orderNumber === '' || orderNumber < 1) {
+          setError('Please enter a valid order number (minimum 1).');
           return false;
       }
       if (amountSharedBy.length === 0) {
@@ -92,6 +107,7 @@ const AddBillForm: React.FC<AddBillFormProps> = ({ onSave, onClose, members, ini
       profit: Number(profit),
       amountSharedBy,
       paidBy,
+      orderNumber: Number(orderNumber),
     };
     
     if (isEditing) {
@@ -137,10 +153,19 @@ const AddBillForm: React.FC<AddBillFormProps> = ({ onSave, onClose, members, ini
             </div>
             {/* Date */}
             <div>
-              <label htmlFor="date" className="block text-sm font-medium text-[#F2F2F2]">Date</label>
-              <input type="date" id="date" value={date} onChange={(e) => setDate(e.target.value)}
-                className="mt-1 block w-full bg-[#2E2E2E] border border-[#3C3C3C] rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-[#00C2A8] focus:border-[#00C2A8] sm:text-sm"
+              <label htmlFor="date" className="block text-sm font-medium text-[#F2F2F2] mb-1">
+                Date
+              </label>
+              <input type="date" id="date" value={dateInput} onChange={(e) => handleDateChange(e.target.value)}
+                className="mt-1 block w-full bg-[#2E2E2E] border border-[#3C3C3C] rounded-md shadow-sm py-2.5 px-3 text-white text-base focus:outline-none focus:ring-[#00C2A8] focus:border-[#00C2A8]"
               />
+              {date && (
+                <div className="mt-2 inline-flex items-center gap-2">
+                  <span className="text-xs font-medium text-[#4F8CFF] bg-[#4F8CFF]/10 px-3 py-1 rounded-full">
+                    📅 Saved as: {date}
+                  </span>
+                </div>
+              )}
             </div>
             {/* Reason */}
             <div>
@@ -152,10 +177,26 @@ const AddBillForm: React.FC<AddBillFormProps> = ({ onSave, onClose, members, ini
             </div>
         </div>
         
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-x-6 gap-y-4 pt-4 border-t border-[#2E2E2E]">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4 pt-4 border-t border-[#2E2E2E]">
+            {/* Order Number */}
+            <div>
+              <label htmlFor="orderNumber" className="block text-sm font-medium text-[#F2F2F2]">
+                Order Number <span className="text-red-500">*</span>
+              </label>
+              <input 
+                type="number" 
+                id="orderNumber" 
+                value={orderNumber} 
+                onChange={(e) => setOrderNumber(e.target.value === '' ? '' : Number(e.target.value))}
+                className="mt-1 block w-full bg-[#2E2E2E] border border-[#3C3C3C] rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-[#00C2A8] focus:border-[#00C2A8] sm:text-sm"
+                placeholder="e.g. 1, 2, 3..."
+                min="1"
+                required
+              />
+            </div>
             {/* Amount */}
             <div>
-                <label htmlFor="amount" className="block text-sm font-medium text-[#F2F2F2]">Amount (Cost)</label>
+                <label htmlFor="amount" className="block text-sm font-medium text-[#F2F2F2]">Amount (Cost) <span className="text-red-500">*</span></label>
                 <input type="number" id="amount" value={amount} onChange={(e) => setAmount(e.target.value === '' ? '' : Number(e.target.value))}
                     className="mt-1 block w-full bg-[#2E2E2E] border border-[#3C3C3C] rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-[#00C2A8] focus:border-[#00C2A8] sm:text-sm"
                     placeholder="e.g. 450"
@@ -163,7 +204,7 @@ const AddBillForm: React.FC<AddBillFormProps> = ({ onSave, onClose, members, ini
             </div>
             {/* Profit */}
             <div>
-                <label htmlFor="profit" className="block text-sm font-medium text-[#F2F2F2]">Profit</label>
+                <label htmlFor="profit" className="block text-sm font-medium text-[#F2F2F2]">Profit <span className="text-red-500">*</span></label>
                 <input type="number" id="profit" value={profit} onChange={(e) => setProfit(e.target.value === '' ? '' : Number(e.target.value))}
                     className="mt-1 block w-full bg-[#2E2E2E] border border-[#3C3C3C] rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-[#00C2A8] focus:border-[#00C2A8] sm:text-sm"
                     placeholder="e.g. 150"
@@ -171,7 +212,7 @@ const AddBillForm: React.FC<AddBillFormProps> = ({ onSave, onClose, members, ini
             </div>
             {/* Paid By */}
             <div>
-              <label htmlFor="paidBy" className="block text-sm font-medium text-[#F2F2F2]">Paid By</label>
+              <label htmlFor="paidBy" className="block text-sm font-medium text-[#F2F2F2]">Paid By <span className="text-red-500">*</span></label>
               <select 
                 id="paidBy" 
                 value={paidBy} 

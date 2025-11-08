@@ -50,7 +50,8 @@ export const useBills = () => {
         amount: parseFloat(bill.amount),
         profit: parseFloat(bill.profit),
         paidBy: bill.paid_by,
-        amountSharedBy: bill.amount_shared_by || []
+        amountSharedBy: bill.amount_shared_by || [],
+        orderNumber: bill.order_number
       }));
 
       setBills(transformedBills);
@@ -76,7 +77,8 @@ export const useBills = () => {
           amount: billData.amount,
           profit: billData.profit,
           paid_by: billData.paidBy,
-          amount_shared_by: billData.amountSharedBy
+          amount_shared_by: billData.amountSharedBy,
+          order_number: billData.orderNumber
         })
         .select()
         .single();
@@ -106,7 +108,8 @@ export const useBills = () => {
           amount: billData.amount,
           profit: billData.profit,
           paid_by: billData.paidBy,
-          amount_shared_by: billData.amountSharedBy
+          amount_shared_by: billData.amountSharedBy,
+          order_number: billData.orderNumber
         })
         .eq('id', billData.id);
 
